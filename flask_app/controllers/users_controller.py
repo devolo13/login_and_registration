@@ -50,8 +50,9 @@ def login_user():
 # page for an individual user
 @app.route('/users/<int:id>')
 def logged_in_user_page():
-    # may need additional logic
-    return render_template('single_user.html')
+    # get the user object to pass through
+    user = User.get_by_id(id)
+    return render_template('single_user.html', user=user)
 
 # route for logging out a user and redirecting to login page
 @app.route('/logout')

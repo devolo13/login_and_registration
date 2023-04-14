@@ -20,6 +20,14 @@ class User:
             users.append(cls(user))
         return users
     
+    # method for getting a single user by their id. returns user object
+    @classmethod
+    def get_by_id(cls,data):
+        # may need a lot of tweaking
+        query = 'SELECT * FROM users WHERE id = %(id)s'
+        results = connectToMySQL(DATABASE).query_db(query, data)
+        return cls(results)
+    
     # method for getting all user emails. returns an array of email addresses
     @classmethod
     def get_all_emails(cls):
@@ -43,7 +51,7 @@ class User:
             # create an error flag for last_name length
             valid_inputs = False
         # validate email format
-        if not re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$').match(user['email']):
+        if not re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$').match(data.email):
             # create an error flag for email
             valid_inputs = False
         # validate password length
