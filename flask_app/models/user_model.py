@@ -1,7 +1,10 @@
 from flask_app.config.mysqlconnection import connectToMySQL
-from flask_app import DATABASE
+from flask_app import DATABASE, app
 from flask import flash
+from flask_bcrypt import Bcrypt
 import re
+
+bcrypt = Bcrypt(app)
 
 
 class User:
@@ -12,11 +15,14 @@ class User:
         self.email = data['email']
         self.password = data['password']
 
-    # method for adding a new user. returns ???
+    # method for adding a new user. returns that user's id
     @classmethod
     def save(cls, data):
         query = 'INSERT into users (first_name, last_name, email, password, created_at, updated_at) values (%(first_name)s, %(last_name)s, %(email)s, %(password)s, NOW(), NOW());'
-        return connectToMySQL(DATABASE.query_db(query, data))
+        connectToMySQL(DATABASE).query_db(query, data)
+        query = 'SELECT MAX(id) from users;'
+        user_id = connectToMySQL(DATABASE).query_db(query)[0]['MAX(id)']
+        return user_id
 
     # method for getting all users. returns a list of user objects
     @classmethod
@@ -31,12 +37,12 @@ class User:
     # method for getting a single user by their id. returns user object
     @classmethod
     def get_by_id(cls, id):
-        data = {'id': id}
+        data = {'id': int(id)}
         query = 'SELECT * FROM users WHERE id = %(id)s'
         results = connectToMySQL(DATABASE).query_db(query, data)
-        return cls(results)
+        return cls(results[0])
 
-    # method for getting all user logins. returns an array of dictionaries
+    # method for getting all user logins. returns a list of dictionaries. [{email: xxx, password: xxx, id: xxx}]
     @classmethod
     def get_all_logins(cls):
         query = "SELECT email, password, id FROM users;"
@@ -46,8 +52,7 @@ class User:
             logins.append(person)
         return logins
 
-    # method for validating user registration inputs. returns True if valid, False if invalid
-    # EMAIL AND PASSWORD ERRORS APPEAR ON LOGIN SIDE AS WELL
+    # method for validating user registration inputs. returns True if valid, False if invalid. creates flash messages along the way
     @staticmethod
     def validate_registration_inputs(data):
         valid_inputs = True
@@ -61,11 +66,11 @@ class User:
             valid_inputs = False
         # validate email format
         if not re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$').match(data['email']):
-            flash('Please input a valid email address', 'email')
+            flash('Please input a valid email address', 'register_email')
             valid_inputs = False
         # validate password length
         if (len(data['password']) <= 8):
-            flash('Password too short. Passwords must be at least 8 characters', 'password')
+            flash('Password too short. Passwords must be at least 8 characters', 'register_password')
             valid_inputs = False
         # validate password confirmation
         if data['password'] != data['confirm_password']:
